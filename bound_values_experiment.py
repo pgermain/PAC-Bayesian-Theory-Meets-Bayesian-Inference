@@ -1,11 +1,11 @@
+from bayesian_regression import BayesianRegression
+
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt, log, exp
 
 from matplotlib import rc
 rc('text', usetex=True)
-
-from bayesian_regression import BayesianRegression
 
 
 def main():
@@ -16,21 +16,20 @@ def main():
     noise = 1/3
     sigma_prior = .1
     sigma_post = sqrt(2)
-    w_norm = .1
-    radius = 5.
+    w_norm = .5
 
     bound_param_a = 1.
-    bound_param_b = 2.
+    bound_param_b = 4.
 
-    bound_param_s = (noise**2 + radius**2 * (sigma_prior**2 + w_norm**2)) / (sqrt(2) * sigma_post**2)
-    bound_param_c = (noise ** 2 + sigma_prior ** 2 * radius ** 2) / (sigma_post**2)
+    bound_param_c = (sigma_prior ** 2) / (sigma_post ** 2)
+    bound_param_s = sqrt(nb_dim * sigma_prior**2 + w_norm**2 + (1 - bound_param_c) * noise**2) / sigma_post
 
     print("Bound parameters: a=%f, b=%f, s=%f, c=%f" % (bound_param_a, bound_param_b, bound_param_s, bound_param_c))
 
     assert bound_param_c < 1
 
     def create_data(n, _w=None):
-        return create_linear_data_into_ball(n, nb_dim, w=_w, sigma_noise=noise, radius=radius, w_norm=w_norm)
+        return create_linear_data(n, nb_dim, w=_w, sigma_noise=noise, w_norm=w_norm)
 
     print('Creating test data...')
     x_test, y_test, w_data = create_data(nb_test)
@@ -71,6 +70,17 @@ def main():
     plt.xlabel('$n$')
     plt.legend()
     plt.show()
+
+
+def create_linear_data(n=100, d=10, sigma_x=1., w=None, w_norm=1., sigma_noise=0.1):
+    if w is None:
+        w = np.random.rand(d)
+        w /= np.linalg.norm(w) / w_norm
+
+    x = np.random.multivariate_normal(np.zeros(d), sigma_x ** 2 * np.eye(d), n) # Sample gaussian data
+    noise = np.random.normal(scale=sigma_noise, size=n)
+    y = np.dot(x, w) + noise
+    return x, y, w
 
 
 def create_linear_data_into_ball(n=100, d=10, w=None, w_norm=1, sigma_noise=.1, radius=1):
